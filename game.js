@@ -12,6 +12,73 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// Initialize Web Audio API
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    isAudioInitialized = true;
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}
+
+// Generate retro-style sounds using Web Audio API
+function createBeep(frequency, duration, type = 'square', volume = 0.1) {
+  if (!isAudioInitialized) initAudio();
+
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+  gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+  gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playCollectSound() {
+  // Short blip sound
+  createBeep(800, 0.1, 'square', 0.15);
+  setTimeout(() => createBeep(1000, 0.1, 'square', 0.1), 50);
+}
+
+function playDamageSound() {
+  // Descending tone
+  createBeep(400, 0.2, 'sawtooth', 0.2);
+  setTimeout(() => createBeep(200, 0.3, 'sawtooth', 0.15), 100);
+}
+
+function playStartSound() {
+  // Upbeat melody
+  const melody = [523, 659, 784, 1047]; // C5, E5, G5, C6
+  melody.forEach((freq, index) => {
+    setTimeout(() => createBeep(freq, 0.15, 'square', 0.2), index * 150);
+  });
+}
+
+function playGameOverSound() {
+  // Descending melody
+  const melody = [523, 440, 349, 294]; // C5, A4, F4, D4
+  melody.forEach((freq, index) => {
+    setTimeout(() => createBeep(freq, 0.2, 'sawtooth', 0.25), index * 200);
+  });
+}
+
+function playNewRoundSound() {
+  // Ascending tone with echo
+  createBeep(300, 0.2, 'square', 0.2);
+  setTimeout(() => createBeep(400, 0.2, 'square', 0.15), 150);
+  setTimeout(() => createBeep(500, 0.3, 'square', 0.1), 300);
+}
+
 function preload() {
   // Load sprites
   this.load.svg('player', 'assets/player.svg');
@@ -19,6 +86,7 @@ function preload() {
   this.load.svg('enemy-chaser', 'assets/enemy-chaser.svg');
   this.load.svg('enemy-patrol', 'assets/enemy-patrol.svg');
   this.load.svg('collectible', 'assets/collectible.svg');
+
 }
 
 let player;
@@ -35,12 +103,19 @@ let enemySpeed = 4;
 let enemyTypes = ['random', 'chaser', 'patrol'];
 let introComplete = false;
 
+
+// Web Audio API for generating retro sounds
+let audioContext;
+let isAudioInitialized = false;
+
 function create() {
   // Create player sprite
   player = this.add.sprite(400, 300, 'player');
 
   // Keyboard controls
   cursors = this.input.keyboard.createCursorKeys();
+
+  // Audio will be generated dynamically using Web Audio API
 
   // Create all game elements first (hidden)
   enemies = this.add.group();
@@ -144,6 +219,9 @@ function create() {
       scoreText.setVisible(true);
       healthText.setVisible(true);
       roundText.setVisible(true);
+
+      // Play start sound
+      playStartSound();
     });
   });
 
@@ -240,12 +318,18 @@ function update() {
       score += 10;
       scoreText.setText('Score: ' + score);
 
+      // Play collect sound
+      playCollectSound();
+
       // Check if all collectibles are collected
       if (collectibles.getLength() === 0) {
         // Start new round
         round++;
         roundText.setText('Round: ' + round);
         enemySpeed += 1; // Increase enemy speed each round
+
+        // Play new round sound
+        playNewRoundSound();
 
         // Respawn collectibles
         for (let i = 0; i < 10; i++) {
@@ -283,6 +367,9 @@ function update() {
     if (distance < 48) {
       health -= 10;
       healthText.setText('Health: ' + health);
+
+      // Play damage sound
+      playDamageSound();
       if (health <= 0) {
         // Game over
         player.setVisible(false);
@@ -295,6 +382,9 @@ function update() {
           // Reset game
           location.reload(); // Simple restart
         });
+
+        // Play game over sound
+        playGameOverSound();
       }
     }
   });
