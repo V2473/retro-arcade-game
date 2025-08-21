@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #000 0%, #111 50%, #000 100%);
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+}
+
+/* Retro glow effects */
+.retro-glow {
+  text-shadow:
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+}
+
+.neon-blue {
+  color: #00ffff;
+  text-shadow:
+    0 0 5px #00ffff,
+    0 0 10px #00ffff,
+    0 0 15px #00ffff;
+}
+
+.neon-pink {
+  color: #ff00ff;
+  text-shadow:
+    0 0 5px #ff00ff,
+    0 0 10px #ff00ff,
+    0 0 15px #ff00ff;
+}
+
+.neon-green {
+  color: #00ff00;
+  text-shadow:
+    0 0 5px #00ff00,
+    0 0 10px #00ff00,
+    0 0 15px #00ff00;
+}
+
+#game-container {
+  width: 800px;
+  height: 600px;
+  position: relative;
+  background: #000;
+  /* CRT filter effects */
+  filter: url('#crt-filter');
+  overflow: hidden;
+}
+
+/* Ultra-Realistic CRT Filter Effects */
+#game-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    /* Horizontal scanlines */
+    linear-gradient(rgba(255, 255, 255, 0.08) 50%, transparent 50%),
+    /* Vertical scanlines */
+    linear-gradient(90deg, transparent 50%, rgba(0, 255, 255, 0.03) 50%),
+    /* Phosphor glow */
+    radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.02) 0%, transparent 50%);
+  background-size: 100% 3px, 3px 100%, 100% 100%;
+  pointer-events: none;
+  z-index: 10;
+  animation: scanlines 0.05s linear infinite, phosphorGlow 2s ease-in-out infinite;
+}
+
+#game-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    /* Screen curvature */
+    radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.6) 90%, rgba(0, 0, 0, 0.8) 100%),
+    /* RGB color separation */
+    radial-gradient(ellipse at 30% 30%, rgba(255, 0, 0, 0.01) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(0, 255, 0, 0.01) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 70%, rgba(0, 0, 255, 0.01) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 11;
+  animation: flicker 0.1s infinite alternate, rgbShift 0.3s ease-in-out infinite;
+}
+
+/* Additional CRT overlay */
+.crt-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    /* Static noise */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
+    /* Screen reflection */
+    linear-gradient(45deg, rgba(255, 255, 255, 0.01) 0%, transparent 50%, rgba(255, 255, 255, 0.01) 100%);
+  pointer-events: none;
+  z-index: 12;
+  animation: noise 0.5s steps(2) infinite, reflection 3s ease-in-out infinite;
+}
+
+@keyframes scanlines {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(3px); }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.96; filter: brightness(0.98); }
+}
+
+@keyframes phosphorGlow {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(5deg) brightness(1.02); }
+}
+
+@keyframes rgbShift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(0.5px, 0); }
+  50% { transform: translate(0, 0.5px); }
+  75% { transform: translate(-0.5px, 0); }
+  100% { transform: translate(0, -0.5px); }
+}
+
+@keyframes noise {
+  0%, 100% { opacity: 0.02; }
+  50% { opacity: 0.04; }
+}
+
+@keyframes reflection {
+  0%, 100% { opacity: 0.01; }
+  50% { opacity: 0.03; }
+}
+
+/* SVG CRT filter */
+svg {
+  display: none;
+}
+
+svg #crt-filter {
+  filter: feGaussianBlur(in="SourceGraphic", stdDeviation="0.3")
+          feColorMatrix(type="matrix", values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0")
+          feVignette(in="SourceGraphic", x="0.5" y="0.5" z="1.5");
+}
