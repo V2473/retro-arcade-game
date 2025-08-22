@@ -52,9 +52,11 @@ const gameState = {
   enemyTypes: GAME_CONSTANTS.ENEMY_TYPES,
   introComplete: false,
   introElements: [],
+  introMusicInterval: null,
   gameOver: false,
   audioContext: null,
-  isAudioInitialized: false
+  isAudioInitialized: false,
+  isAudioUnlocked: false
 };
 
 /**
@@ -65,28 +67,81 @@ const AudioSystem = {
   init() {
     try {
       if (!gameState.audioContext) {
+        console.log('🎵 AUDIO: Creating new AudioContext');
         gameState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         gameState.isAudioInitialized = true;
+        console.log(`🎵 AUDIO: AudioContext created with state: ${gameState.audioContext.state}`);
       }
+
       if (gameState.audioContext.state === 'suspended') {
-        gameState.audioContext.resume();
+        console.log('🔊 AUDIO: Resuming suspended AudioContext');
+        gameState.audioContext.resume().then(() => {
+          console.log(`✅ AUDIO: AudioContext resumed, new state: ${gameState.audioContext.state}`);
+        });
+      } else {
+        console.log(`✅ AUDIO: AudioContext already active, state: ${gameState.audioContext.state}`);
       }
     } catch (error) {
-      console.warn('Audio initialization failed:', error);
+      console.warn('❌ AUDIO: Initialization failed:', error);
       gameState.isAudioInitialized = false;
     }
   },
 
-  createBeep(frequency, duration, type = 'square', volume = 0.1) {
+  unlock() {
+    console.log('🔓 AUDIO: Attempting to unlock audio context');
+    if (gameState.isAudioUnlocked) {
+      console.log('✅ AUDIO: Already unlocked, skipping');
+      return;
+    }
+
     if (!gameState.isAudioInitialized) {
       this.init();
     }
 
+    if (gameState.audioContext && gameState.audioContext.state === 'suspended') {
+      // Create and immediately stop a silent sound to unlock audio
+      const silentBuffer = gameState.audioContext.createBuffer(1, 1, 22050);
+      const source = gameState.audioContext.createBufferSource();
+      source.buffer = silentBuffer;
+      source.connect(gameState.audioContext.destination);
+      source.start();
+      console.log('🔓 AUDIO: Silent unlock sound played');
+
+      // Resume context
+      gameState.audioContext.resume().then(() => {
+        console.log(`✅ AUDIO: AudioContext unlocked and active, state: ${gameState.audioContext.state}`);
+        gameState.isAudioUnlocked = true;
+      }).catch(error => {
+        console.warn('❌ AUDIO: Failed to unlock audio context:', error);
+      });
+    } else {
+      console.log(`✅ AUDIO: AudioContext already unlocked, state: ${gameState.audioContext.state}`);
+      gameState.isAudioUnlocked = true;
+    }
+  },
+
+  createBeep(frequency, duration, type = 'square', volume = 0.1) {
+    console.log(`🎵 AUDIO: Creating beep - Freq: ${frequency}Hz, Duration: ${duration}s, Type: ${type}, Volume: ${volume}`);
+
+    if (!gameState.isAudioUnlocked) {
+      console.log('🔒 AUDIO: Audio not unlocked yet, skipping beep to prevent autoplay issues');
+      return; // Skip audio if not unlocked to prevent loud bursts
+    }
+
     if (!gameState.isAudioInitialized) {
+      console.log('🔊 AUDIO: Initializing audio context...');
+      this.init();
+    }
+
+    if (!gameState.isAudioInitialized) {
+      console.warn('❌ AUDIO: Initialization failed, skipping beep');
       return; // Skip audio if initialization failed
     }
 
     try {
+      const currentTime = gameState.audioContext.currentTime;
+      console.log(`⏰ AUDIO: Current audio context time: ${currentTime.toFixed(3)}s`);
+
       const oscillator = gameState.audioContext.createOscillator();
       const gainNode = gameState.audioContext.createGain();
 
@@ -94,16 +149,22 @@ const AudioSystem = {
       gainNode.connect(gameState.audioContext.destination);
 
       oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, gameState.audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(frequency, currentTime);
 
-      gainNode.gain.setValueAtTime(0, gameState.audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(volume, gameState.audioContext.currentTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, gameState.audioContext.currentTime + duration);
+      // DEBUG: Check current gain levels
+      const activeNodes = gameState.audioContext.destination.numberOfInputs || 0;
+      console.log(`🔗 AUDIO: Active audio nodes: ${activeNodes}, Target volume: ${volume}`);
 
-      oscillator.start(gameState.audioContext.currentTime);
-      oscillator.stop(gameState.audioContext.currentTime + duration);
+      gainNode.gain.setValueAtTime(0, currentTime);
+      gainNode.gain.linearRampToValueAtTime(volume, currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + duration);
+
+      oscillator.start(currentTime);
+      oscillator.stop(currentTime + duration);
+
+      console.log(`✅ AUDIO: Beep scheduled - Start: ${currentTime.toFixed(3)}s, End: ${(currentTime + duration).toFixed(3)}s`);
     } catch (error) {
-      console.warn('Audio playback failed:', error);
+      console.warn('❌ AUDIO: Playback failed:', error);
     }
   },
 
@@ -135,6 +196,56 @@ const AudioSystem = {
     this.createBeep(300, 0.2, 'square', 0.2);
     setTimeout(() => this.createBeep(400, 0.2, 'square', 0.15), 150);
     setTimeout(() => this.createBeep(500, 0.3, 'square', 0.1), 300);
+  },
+
+  startIntroMusic() {
+    console.log('🎵 AUDIO: Starting intro background music');
+
+    if (!gameState.isAudioUnlocked) {
+      console.log('🔒 AUDIO: Audio not unlocked yet, delaying intro music start');
+      // Retry in 100ms until unlocked
+      setTimeout(() => this.startIntroMusic(), 100);
+      return;
+    }
+
+    // Simple 8-bit style background melody
+    const melody = [
+      { freq: 261, duration: 0.3, type: 'square' }, // C4
+      { freq: 329, duration: 0.3, type: 'square' }, // E4
+      { freq: 392, duration: 0.3, type: 'square' }, // G4
+      { freq: 523, duration: 0.4, type: 'square' }, // C5
+      { freq: 392, duration: 0.2, type: 'square' }, // G4
+      { freq: 329, duration: 0.2, type: 'square' }, // E4
+      { freq: 261, duration: 0.5, type: 'square' }, // C4
+      { freq: 329, duration: 0.3, type: 'square' }, // E4
+      { freq: 392, duration: 0.3, type: 'square' }, // G4
+      { freq: 523, duration: 0.4, type: 'square' }, // C5
+      { freq: 659, duration: 0.3, type: 'square' }, // E5
+      { freq: 784, duration: 0.6, type: 'square' }  // G5
+    ];
+
+    gameState.introMusicInterval = setInterval(() => {
+      if (!gameState.introComplete && gameState.isAudioInitialized && gameState.isAudioUnlocked) {
+        melody.forEach((note, index) => {
+          setTimeout(() => {
+            if (!gameState.introComplete) {
+              this.createBeep(note.freq, note.duration, note.type, 0.15);
+            }
+          }, index * 200);
+        });
+      }
+    }, 3000); // Repeat every 3 seconds
+
+    console.log('✅ AUDIO: Intro music started with interval ID:', gameState.introMusicInterval);
+  },
+
+  stopIntroMusic() {
+    console.log('🎵 AUDIO: Stopping intro background music');
+    if (gameState.introMusicInterval) {
+      clearInterval(gameState.introMusicInterval);
+      gameState.introMusicInterval = null;
+      console.log('✅ AUDIO: Intro music stopped');
+    }
   }
 };
 
@@ -181,6 +292,7 @@ const IntroSystem = {
       gameState.introElements.push(glowText2);
 
       // Dramatic 8-bit fanfare sound sequence
+      console.log('🎺 AUDIO: Starting company logo fanfare sequence');
       const fanfareNotes = [
         { freq: 523, duration: 0.15, type: 'square', delay: 0 },    // C5
         { freq: 659, duration: 0.15, type: 'square', delay: 150 },  // E5
@@ -190,11 +302,16 @@ const IntroSystem = {
         { freq: 1568, duration: 0.5, type: 'sawtooth', delay: 1200 }  // G6
       ];
 
-      fanfareNotes.forEach(note => {
+      console.log(`🎵 AUDIO: Fanfare sequence will play ${fanfareNotes.length} notes with volume 0.4`);
+      fanfareNotes.forEach((note, index) => {
         scene.time.delayedCall(note.delay, () => {
+          console.log(`🎺 AUDIO: Playing fanfare note ${index + 1}/${fanfareNotes.length} - ${note.freq}Hz after ${note.delay}ms delay`);
           AudioSystem.createBeep(note.freq, note.duration, note.type, 0.4);
         });
       });
+
+      // Start intro background music
+      AudioSystem.startIntroMusic();
 
       // Color cycling animation - faster for more 80s energy
       const colorCycle = scene.time.addEvent({
@@ -241,6 +358,7 @@ const IntroSystem = {
         });
 
         // 8-bit chime sound
+        console.log('🎵 AUDIO: Playing subtitle reveal chimes');
         AudioSystem.createBeep(800, 0.1, 'square', 0.3);
         scene.time.delayedCall(200, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.3));
         scene.time.delayedCall(400, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.4));
@@ -261,6 +379,7 @@ const IntroSystem = {
         colorCycle.destroy(); // Stop color cycling
 
         // Final dramatic sound
+        console.log('🎵 AUDIO: Playing final dramatic sounds with volumes 0.4, 0.4, 0.5');
         AudioSystem.createBeep(800, 0.1, 'square', 0.4);
         scene.time.delayedCall(150, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.4));
         scene.time.delayedCall(300, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.5));
@@ -456,26 +575,34 @@ const GameLogicSystem = {
     });
 
     startButton.on('pointerdown', () => {
-      // Hide title screen elements
-      scene.children.list.forEach(child => {
-        if (child !== gameState.player &&
-            !gameState.enemies.contains(child) &&
-            !gameState.collectibles.contains(child) &&
-            child !== gameState.scoreText &&
-            child !== gameState.healthText &&
-            child !== gameState.roundText) {
-          child.setVisible(false);
-        }
-      });
+       console.log('👆 AUDIO: First user interaction detected - unlocking audio');
 
-      // Start loading screen directly (skip company logo)
-      console.log('Starting loading screen...');
-      GameLogicSystem.runLoadingScreen.call(scene);
-    });
+       // Unlock audio context on first interaction
+       AudioSystem.unlock();
+
+       // Hide title screen elements
+       scene.children.list.forEach(child => {
+         if (child !== gameState.player &&
+             !gameState.enemies.contains(child) &&
+             !gameState.collectibles.contains(child) &&
+             child !== gameState.scoreText &&
+             child !== gameState.healthText &&
+             child !== gameState.roundText) {
+           child.setVisible(false);
+         }
+       });
+
+       // Start loading screen directly (skip company logo)
+       console.log('Starting loading screen...');
+       GameLogicSystem.runLoadingScreen.call(scene);
+     });
   },
 
   startActualGame() {
     console.log('Intro complete, starting game...');
+
+    // Stop intro music
+    AudioSystem.stopIntroMusic();
 
     // Start the actual game
     if (gameState.player) gameState.player.setVisible(true);
@@ -584,10 +711,10 @@ function create() {
   // Create HUD elements
   GameFactory.createHUDText(scene);
 
-  // Start with company logo sequence
+  // Start with title screen (keeping start button and loading screen)
   console.log('=== CREATE() FUNCTION CALLED ===');
-  console.log('Starting company logo sequence...');
-  GameLogicSystem.runCompanyLogoSequence.call(scene);
+  console.log('Starting title screen...');
+  GameLogicSystem.showTitleScreen.call(scene);
 
   // Initially hide all game elements
   if (gameState.player) gameState.player.setVisible(false);
@@ -667,11 +794,13 @@ function update() {
     });
   }
 
-  // Collision detection with collectibles
-  if (gameState.collectibles && gameState.player) {
+  // Collision detection with collectibles (only during active gameplay)
+  if (gameState.collectibles && gameState.player && gameState.introComplete && !gameState.gameOver) {
     gameState.collectibles.getChildren().forEach(collectible => {
-      const distance = Phaser.Math.Distance.Between(gameState.player.x, gameState.player.y, collectible.x, collectible.y);
-      if (distance < GAME_CONSTANTS.COLLECTIBLE_SIZE) {
+      // Only check collision if both entities are visible
+      if (collectible.visible && gameState.player.visible) {
+        const distance = Phaser.Math.Distance.Between(gameState.player.x, gameState.player.y, collectible.x, collectible.y);
+        if (distance < GAME_CONSTANTS.COLLECTIBLE_SIZE) {
         collectible.setVisible(false);
         gameState.collectibles.remove(collectible);
         gameState.score += GAME_CONSTANTS.SCORE_PER_COLLECTIBLE;
@@ -717,48 +846,52 @@ function update() {
           }
         }
       }
+      }
     });
   }
 
-  // Collision detection with enemies
-  if (gameState.enemies && gameState.player) {
+  // Collision detection with enemies (only during active gameplay)
+  if (gameState.enemies && gameState.player && gameState.introComplete && !gameState.gameOver) {
     gameState.enemies.getChildren().forEach(enemy => {
-      const distance = Phaser.Math.Distance.Between(gameState.player.x, gameState.player.y, enemy.x, enemy.y);
-      if (distance < GAME_CONSTANTS.ENEMY_SIZE) {
-        gameState.health -= GAME_CONSTANTS.DAMAGE_PER_ENEMY;
-        if (gameState.healthText) {
-          gameState.healthText.setText(`Health: ${gameState.health}`);
-        }
+      // Only check collision if both entities are visible
+      if (enemy.visible && gameState.player.visible) {
+        const distance = Phaser.Math.Distance.Between(gameState.player.x, gameState.player.y, enemy.x, enemy.y);
+        if (distance < GAME_CONSTANTS.ENEMY_SIZE) {
+          gameState.health -= GAME_CONSTANTS.DAMAGE_PER_ENEMY;
+          if (gameState.healthText) {
+            gameState.healthText.setText(`Health: ${gameState.health}`);
+          }
 
-        // Play damage sound
-        AudioSystem.playDamageSound();
+          // Play damage sound
+          AudioSystem.playDamageSound();
 
-        if (gameState.health <= 0) {
-          // Game over - stop the game
-          gameState.gameOver = true;
-          if (gameState.player) gameState.player.setVisible(false);
-          if (gameState.enemies) gameState.enemies.setVisible(false);
-          if (gameState.collectibles) gameState.collectibles.setVisible(false);
+          if (gameState.health <= 0) {
+            // Game over - stop the game
+            gameState.gameOver = true;
+            if (gameState.player) gameState.player.setVisible(false);
+            if (gameState.enemies) gameState.enemies.setVisible(false);
+            if (gameState.collectibles) gameState.collectibles.setVisible(false);
 
-          const gameOverText = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2,
-            'Game Over', {
-              fontSize: '32px',
-              fill: '#fff'
-            }).setOrigin(0.5);
+            const gameOverText = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2,
+              'Game Over', {
+                fontSize: '32px',
+                fill: '#fff'
+              }).setOrigin(0.5);
 
-          const restartButton = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 100,
-            'Restart', {
-              fontSize: '24px',
-              fill: '#fff'
-            }).setOrigin(0.5);
-          restartButton.setInteractive();
-          restartButton.on('pointerdown', () => {
-            // Reset game
-            location.reload(); // Simple restart
-          });
+            const restartButton = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 100,
+              'Restart', {
+                fontSize: '24px',
+                fill: '#fff'
+              }).setOrigin(0.5);
+            restartButton.setInteractive();
+            restartButton.on('pointerdown', () => {
+              // Reset game
+              location.reload(); // Simple restart
+            });
 
-          // Play game over sound
-          AudioSystem.playGameOverSound();
+            // Play game over sound
+            AudioSystem.playGameOverSound();
+          }
         }
       }
     });
