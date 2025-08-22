@@ -641,10 +641,10 @@ const GameLogicSystem = {
     percentText.setShadow(1, 1, '#000000', 3);
     gameState.introElements.push(percentText);
 
-    // Update percentage with progress
+    // Update percentage with progress (synchronized with progress bar)
     let currentPercent = 0;
     const percentInterval = scene.time.addEvent({
-      delay: 50,
+      delay: 22, // 2200ms total / 100 steps = 22ms per step
       repeat: 100,
       callback: () => {
         currentPercent++;
@@ -716,6 +716,10 @@ const GameLogicSystem = {
     scene.time.delayedCall(2200, () => {
       loadingInterval.destroy();
       percentInterval.destroy();
+
+      // Ensure percentage shows 100%
+      percentText.setText('100%');
+      percentText.setFill('#00ff00'); // Green for completion
 
       // Final system ready message
       statusText.setText('SYSTEM READY - ENGAGE!');
