@@ -199,7 +199,7 @@ const AudioSystem = {
   },
 
   startIntroMusic() {
-    console.log('🎵 AUDIO: Starting intro background music');
+    console.log('🎵 AUDIO: Starting enhanced 80s intro background music');
 
     if (!gameState.isAudioUnlocked) {
       console.log('🔒 AUDIO: Audio not unlocked yet, delaying intro music start');
@@ -208,35 +208,77 @@ const AudioSystem = {
       return;
     }
 
-    // Simple 8-bit style background melody
-    const melody = [
-      { freq: 261, duration: 0.3, type: 'square' }, // C4
-      { freq: 329, duration: 0.3, type: 'square' }, // E4
-      { freq: 392, duration: 0.3, type: 'square' }, // G4
-      { freq: 523, duration: 0.4, type: 'square' }, // C5
-      { freq: 392, duration: 0.2, type: 'square' }, // G4
-      { freq: 329, duration: 0.2, type: 'square' }, // E4
-      { freq: 261, duration: 0.5, type: 'square' }, // C4
-      { freq: 329, duration: 0.3, type: 'square' }, // E4
-      { freq: 392, duration: 0.3, type: 'square' }, // G4
-      { freq: 523, duration: 0.4, type: 'square' }, // C5
-      { freq: 659, duration: 0.3, type: 'square' }, // E5
-      { freq: 784, duration: 0.6, type: 'square' }  // G5
+    // Enhanced 80s synth-style background melody with bass and lead
+    const bassLine = [
+      { freq: 130.81, duration: 0.4, type: 'sawtooth', volume: 0.3 }, // C3
+      { freq: 164.81, duration: 0.4, type: 'sawtooth', volume: 0.3 }, // E3
+      { freq: 196.00, duration: 0.4, type: 'sawtooth', volume: 0.3 }, // G3
+      { freq: 261.63, duration: 0.6, type: 'sawtooth', volume: 0.4 }, // C4
+      { freq: 196.00, duration: 0.3, type: 'sawtooth', volume: 0.3 }, // G3
+      { freq: 164.81, duration: 0.3, type: 'sawtooth', volume: 0.3 }, // E3
+      { freq: 130.81, duration: 0.8, type: 'sawtooth', volume: 0.4 }  // C3
+    ];
+
+    const leadLine = [
+      { freq: 523.25, duration: 0.2, type: 'square', volume: 0.2 }, // C5
+      { freq: 659.25, duration: 0.2, type: 'square', volume: 0.2 }, // E5
+      { freq: 783.99, duration: 0.3, type: 'square', volume: 0.25 }, // G5
+      { freq: 1046.50, duration: 0.4, type: 'square', volume: 0.3 }, // C6
+      { freq: 783.99, duration: 0.2, type: 'square', volume: 0.2 }, // G5
+      { freq: 659.25, duration: 0.2, type: 'square', volume: 0.2 }, // E5
+      { freq: 523.25, duration: 0.6, type: 'square', volume: 0.25 }, // C5
+      { freq: 659.25, duration: 0.2, type: 'square', volume: 0.2 }, // E5
+      { freq: 783.99, duration: 0.3, type: 'square', volume: 0.25 }, // G5
+      { freq: 1046.50, duration: 0.4, type: 'square', volume: 0.3 }, // C6
+      { freq: 1318.51, duration: 0.3, type: 'square', volume: 0.35 }, // E6
+      { freq: 1567.98, duration: 0.8, type: 'square', volume: 0.4 }  // G6
+    ];
+
+    const arpeggio = [
+      { freq: 523.25, duration: 0.15, type: 'triangle', volume: 0.1 }, // C5
+      { freq: 659.25, duration: 0.15, type: 'triangle', volume: 0.1 }, // E5
+      { freq: 783.99, duration: 0.15, type: 'triangle', volume: 0.1 }, // G5
+      { freq: 1046.50, duration: 0.15, type: 'triangle', volume: 0.1 } // C6
     ];
 
     gameState.introMusicInterval = setInterval(() => {
       if (!gameState.introComplete && gameState.isAudioInitialized && gameState.isAudioUnlocked) {
-        melody.forEach((note, index) => {
+        // Play bass line
+        bassLine.forEach((note, index) => {
           setTimeout(() => {
             if (!gameState.introComplete) {
-              this.createBeep(note.freq, note.duration, note.type, 0.15);
+              this.createBeep(note.freq, note.duration, note.type, note.volume);
             }
-          }, index * 200);
+          }, index * 150);
         });
-      }
-    }, 3000); // Repeat every 3 seconds
 
-    console.log('✅ AUDIO: Intro music started with interval ID:', gameState.introMusicInterval);
+        // Play lead line with slight delay
+        leadLine.forEach((note, index) => {
+          setTimeout(() => {
+            if (!gameState.introComplete) {
+              this.createBeep(note.freq, note.duration, note.type, note.volume);
+            }
+          }, 100 + index * 150);
+        });
+
+        // Play arpeggio every other cycle for more 80s feel
+        if (Math.random() > 0.5) {
+          setTimeout(() => {
+            if (!gameState.introComplete) {
+              arpeggio.forEach((note, index) => {
+                setTimeout(() => {
+                  if (!gameState.introComplete) {
+                    this.createBeep(note.freq, note.duration, note.type, note.volume);
+                  }
+                }, index * 80);
+              });
+            }
+          }, 500);
+        }
+      }
+    }, 2800); // Repeat every 2.8 seconds for more dynamic feel
+
+    console.log('✅ AUDIO: Enhanced 80s intro music started with interval ID:', gameState.introMusicInterval);
   },
 
   stopIntroMusic() {
@@ -255,84 +297,64 @@ const AudioSystem = {
  */
 const IntroSystem = {
   createCompanyLogo(scene) {
-    console.log('=== CREATING ENHANCED 80s COMPANY LOGO ===');
+    console.log('=== CREATING ENHANCED 80s SVG LOGO ===');
 
     try {
-      // Enhanced 80s-style company logo with dramatic effects
+      // Create SVG logo sprite instead of text
+      const logo = scene.add.sprite(GAME_CONSTANTS.WIDTH / 2, 200, 'logo').setOrigin(0.5);
+      logo.setScale(0.8); // Start slightly smaller for zoom effect
+      gameState.introElements.push(logo);
 
-      // Create multiple text layers for depth effect
-      const colors = ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080'];
-      let colorIndex = 0;
+      // Add glow effect by creating multiple layers
+      const glowLogo1 = scene.add.sprite(GAME_CONSTANTS.WIDTH / 2, 200, 'logo').setOrigin(0.5).setAlpha(0.6);
+      glowLogo1.setScale(0.82);
+      glowLogo1.setTint(0x00ffff);
+      gameState.introElements.push(glowLogo1);
 
-      // Main company text with color cycling
-      const companyText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 200, 'RETRO GAMING CORP', {
-        fontSize: '32px',
-        fill: colors[0],
-        fontFamily: 'Press Start 2P'
-      }).setOrigin(0.5);
+      const glowLogo2 = scene.add.sprite(GAME_CONSTANTS.WIDTH / 2, 200, 'logo').setOrigin(0.5).setAlpha(0.3);
+      glowLogo2.setScale(0.84);
+      glowLogo2.setTint(0xff00ff);
+      gameState.introElements.push(glowLogo2);
 
-      companyText.setShadow(2, 2, '#000000', 8);
-      gameState.introElements.push(companyText);
-
-      // Glow effect layers
-      const glowText1 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 200, 'RETRO GAMING CORP', {
-        fontSize: '32px',
-        fill: colors[0],
-        fontFamily: 'Press Start 2P'
-      }).setOrigin(0.5).setAlpha(0.6);
-      glowText1.setShadow(0, 0, colors[0], 20);
-      gameState.introElements.push(glowText1);
-
-      const glowText2 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 200, 'RETRO GAMING CORP', {
-        fontSize: '32px',
-        fill: colors[0],
-        fontFamily: 'Press Start 2P'
-      }).setOrigin(0.5).setAlpha(0.3);
-      glowText2.setShadow(0, 0, colors[0], 40);
-      gameState.introElements.push(glowText2);
-
-      // Dramatic 8-bit fanfare sound sequence
-      console.log('🎺 AUDIO: Starting company logo fanfare sequence');
+      // Enhanced 8-bit fanfare with more dramatic 80s synth sounds
+      console.log('🎺 AUDIO: Starting enhanced company logo fanfare sequence');
       const fanfareNotes = [
-        { freq: 523, duration: 0.15, type: 'square', delay: 0 },    // C5
-        { freq: 659, duration: 0.15, type: 'square', delay: 150 },  // E5
-        { freq: 784, duration: 0.2, type: 'square', delay: 300 },   // G5
-        { freq: 1047, duration: 0.3, type: 'square', delay: 500 },  // C6
-        { freq: 1319, duration: 0.4, type: 'sawtooth', delay: 800 }, // E6
-        { freq: 1568, duration: 0.5, type: 'sawtooth', delay: 1200 }  // G6
+        { freq: 523, duration: 0.15, type: 'square', delay: 0, volume: 0.5 },    // C5
+        { freq: 659, duration: 0.15, type: 'square', delay: 150, volume: 0.5 },  // E5
+        { freq: 784, duration: 0.2, type: 'sawtooth', delay: 300, volume: 0.6 },   // G5
+        { freq: 1047, duration: 0.3, type: 'sawtooth', delay: 500, volume: 0.7 },  // C6
+        { freq: 1319, duration: 0.4, type: 'sawtooth', delay: 800, volume: 0.8 }, // E6
+        { freq: 1568, duration: 0.5, type: 'sawtooth', delay: 1200, volume: 0.9 }  // G6
       ];
 
-      console.log(`🎵 AUDIO: Fanfare sequence will play ${fanfareNotes.length} notes with volume 0.4`);
+      console.log(`🎵 AUDIO: Enhanced fanfare sequence will play ${fanfareNotes.length} notes`);
       fanfareNotes.forEach((note, index) => {
         scene.time.delayedCall(note.delay, () => {
-          console.log(`🎺 AUDIO: Playing fanfare note ${index + 1}/${fanfareNotes.length} - ${note.freq}Hz after ${note.delay}ms delay`);
-          AudioSystem.createBeep(note.freq, note.duration, note.type, 0.4);
+          console.log(`🎺 AUDIO: Playing enhanced fanfare note ${index + 1}/${fanfareNotes.length} - ${note.freq}Hz after ${note.delay}ms delay`);
+          AudioSystem.createBeep(note.freq, note.duration, note.type, note.volume);
         });
       });
 
-      // Start intro background music
+      // Start enhanced intro background music
       AudioSystem.startIntroMusic();
 
-      // Color cycling animation - faster for more 80s energy
+      // Color cycling animation for logo tint
+      const colors = [0xff0000, 0xff8000, 0xffff00, 0x80ff00, 0x00ff00, 0x00ff80, 0x00ffff, 0x0080ff, 0x0000ff, 0x8000ff, 0xff00ff, 0xff0080];
+      let colorIndex = 0;
+
       const colorCycle = scene.time.addEvent({
-        delay: 80, // Faster cycling for 80s energy
-        repeat: 35, // More cycles
+        delay: 100, // Slightly slower for more dramatic effect
+        repeat: 40, // More cycles
         callback: () => {
           colorIndex = (colorIndex + 1) % colors.length;
-          const currentColor = colors[colorIndex];
-
-          companyText.setFill(currentColor);
-          glowText1.setFill(currentColor);
-          glowText2.setFill(currentColor);
-          glowText1.setShadow(0, 0, currentColor, 20);
-          glowText2.setShadow(0, 0, currentColor, 40);
+          logo.setTint(colors[colorIndex]);
         }
       });
 
-      // Subtitle with dramatic reveal - multiple lines for more 80s feel
-      scene.time.delayedCall(2000, () => {
+      // Subtitle with dramatic reveal
+      scene.time.delayedCall(2500, () => {
         // First subtitle line
-        const subtitle1 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 280, 'EST. 1982', {
+        const subtitle1 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 320, 'EST. 1982', {
           fontSize: '20px',
           fill: '#00ffff',
           fontFamily: 'Press Start 2P'
@@ -341,7 +363,7 @@ const IntroSystem = {
         gameState.introElements.push(subtitle1);
 
         // Second subtitle line
-        const subtitle2 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 320, 'PRESENTS', {
+        const subtitle2 = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 350, 'PRESENTS', {
           fontSize: '16px',
           fill: '#ffff00',
           fontFamily: 'Press Start 2P'
@@ -353,36 +375,48 @@ const IntroSystem = {
         scene.tweens.add({
           targets: [subtitle1, subtitle2],
           alpha: { from: 0, to: 1 },
-          duration: 500,
+          duration: 600,
           ease: 'Bounce'
         });
 
-        // 8-bit chime sound
-        console.log('🎵 AUDIO: Playing subtitle reveal chimes');
-        AudioSystem.createBeep(800, 0.1, 'square', 0.3);
-        scene.time.delayedCall(200, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.3));
-        scene.time.delayedCall(400, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.4));
+        // Enhanced 8-bit chime sounds
+        console.log('🎵 AUDIO: Playing enhanced subtitle reveal chimes');
+        AudioSystem.createBeep(800, 0.1, 'square', 0.4);
+        scene.time.delayedCall(200, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.4));
+        scene.time.delayedCall(400, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.5));
+        scene.time.delayedCall(600, () => AudioSystem.createBeep(1500, 0.3, 'sawtooth', 0.6));
       });
 
-      // Add dramatic zoom effect to main logo
+      // Add dramatic zoom and pulse effect to logo
       scene.tweens.add({
-        targets: [companyText, glowText1, glowText2],
-        scale: { from: 0.8, to: 1.1 },
-        duration: 600,
+        targets: [logo, glowLogo1, glowLogo2],
+        scale: { from: 0.8, to: 1.2 },
+        duration: 800,
         ease: 'Back.easeOut',
         yoyo: true,
-        delay: 100
+        delay: 200
+      });
+
+      // Add pulsing glow effect
+      scene.tweens.add({
+        targets: [glowLogo1, glowLogo2],
+        alpha: { from: 0.3, to: 0.8 },
+        duration: 1000,
+        ease: 'Power2',
+        repeat: -1,
+        yoyo: true
       });
 
       // Move to next stage after enhanced timing
-      scene.time.delayedCall(5000, () => {
+      scene.time.delayedCall(6000, () => {
         colorCycle.destroy(); // Stop color cycling
 
-        // Final dramatic sound
-        console.log('🎵 AUDIO: Playing final dramatic sounds with volumes 0.4, 0.4, 0.5');
-        AudioSystem.createBeep(800, 0.1, 'square', 0.4);
-        scene.time.delayedCall(150, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.4));
-        scene.time.delayedCall(300, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.5));
+        // Final dramatic sound sequence
+        console.log('🎵 AUDIO: Playing final dramatic sound sequence');
+        AudioSystem.createBeep(800, 0.1, 'square', 0.5);
+        scene.time.delayedCall(150, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.5));
+        scene.time.delayedCall(300, () => AudioSystem.createBeep(1200, 0.2, 'square', 0.6));
+        scene.time.delayedCall(500, () => AudioSystem.createBeep(1600, 0.4, 'sawtooth', 0.8));
 
         if (typeof this.nextStage === 'function') {
           this.nextStage();
@@ -552,7 +586,7 @@ const GameLogicSystem = {
 
     // Title screen
     const titleText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 100, 'RETRO ARCADE ADVENTURE', {
-      fontSize: '24px',
+      fontSize: '64px',
       fill: '#ffff00',
       fontFamily: 'Press Start 2P'
     }).setOrigin(0.5);
@@ -687,6 +721,9 @@ function preload() {
   this.load.svg('enemy-chaser', 'assets/enemy-chaser.svg');
   this.load.svg('enemy-patrol', 'assets/enemy-patrol.svg');
   this.load.svg('collectible', 'assets/collectible.svg');
+
+  // Load logo for intro
+  this.load.svg('logo', 'assets/logo.svg');
 }
 
 function create() {
