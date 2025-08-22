@@ -1091,15 +1091,47 @@ function update() {
                 fill: '#fff'
               }).setOrigin(0.5);
 
-            const restartButton = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 100,
+            // Add the AI GPU message with 80s retro styling
+            const aiGPUTitle = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 50,
+              'AI GOT ALL GPUS', {
+                fontSize: '28px',
+                fill: '#00ffff',
+                fontFamily: 'Press Start 2P'
+              }).setOrigin(0.5);
+            aiGPUTitle.setShadow(2, 2, '#000000', 4);
+
+            // Add subtitle with dramatic reveal effect
+            const aiSubtitle = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 80,
+              'SYSTEM COMPROMISED', {
+                fontSize: '16px',
+                fill: '#ff0000',
+                fontFamily: 'Press Start 2P'
+              }).setOrigin(0.5).setAlpha(0);
+            aiSubtitle.setShadow(1, 1, '#000000', 2);
+
+            // Animate the subtitle reveal
+            this.tweens.add({
+              targets: aiSubtitle,
+              alpha: { from: 0, to: 1 },
+              duration: 1000,
+              ease: 'Power2',
+              delay: 500
+            });
+
+            // Add some dramatic sound effects
+            AudioSystem.createBeep(300, 0.2, 'sawtooth', 0.4);
+            setTimeout(() => AudioSystem.createBeep(200, 0.3, 'sawtooth', 0.3), 300);
+            setTimeout(() => AudioSystem.createBeep(150, 0.4, 'sawtooth', 0.5), 600);
+
+            const restartButton = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 140,
               'Restart', {
                 fontSize: '24px',
                 fill: '#fff'
               }).setOrigin(0.5);
             restartButton.setInteractive();
 
-            // Add instruction text for spacebar on restart
-            const restartInstruction = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 140,
+            // Add instruction text for spacebar on restart (moved lower)
+            const restartInstruction = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 180,
               'OR PRESS SPACEBAR', {
                 fontSize: '12px',
                 fill: '#ffff00',
