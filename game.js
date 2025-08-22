@@ -574,28 +574,42 @@ const GameLogicSystem = {
       yoyo: true
     });
 
-    startButton.on('pointerdown', () => {
-       console.log('👆 AUDIO: First user interaction detected - unlocking audio');
+    // Add instruction text for spacebar
+    const spaceInstruction = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 450, 'OR PRESS SPACEBAR', {
+      fontSize: '12px',
+      fill: '#ffff00',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5);
 
-       // Unlock audio context on first interaction
-       AudioSystem.unlock();
+    // Function to handle start game
+    const startGame = () => {
+      console.log('👆 AUDIO: First user interaction detected - unlocking audio');
 
-       // Hide title screen elements
-       scene.children.list.forEach(child => {
-         if (child !== gameState.player &&
-             !gameState.enemies.contains(child) &&
-             !gameState.collectibles.contains(child) &&
-             child !== gameState.scoreText &&
-             child !== gameState.healthText &&
-             child !== gameState.roundText) {
-           child.setVisible(false);
-         }
-       });
+      // Unlock audio context on first interaction
+      AudioSystem.unlock();
 
-       // Start loading screen directly (skip company logo)
-       console.log('Starting loading screen...');
-       GameLogicSystem.runLoadingScreen.call(scene);
-     });
+      // Hide title screen elements
+      scene.children.list.forEach(child => {
+        if (child !== gameState.player &&
+            !gameState.enemies.contains(child) &&
+            !gameState.collectibles.contains(child) &&
+            child !== gameState.scoreText &&
+            child !== gameState.healthText &&
+            child !== gameState.roundText) {
+          child.setVisible(false);
+        }
+      });
+
+      // Start loading screen directly (skip company logo)
+      console.log('Starting loading screen...');
+      GameLogicSystem.runLoadingScreen.call(scene);
+    };
+
+    startButton.on('pointerdown', startGame);
+
+    // Add spacebar support for start button
+    const spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    spaceKey.on('down', startGame);
   },
 
   startActualGame() {
@@ -884,10 +898,26 @@ function update() {
                 fill: '#fff'
               }).setOrigin(0.5);
             restartButton.setInteractive();
-            restartButton.on('pointerdown', () => {
+
+            // Add instruction text for spacebar on restart
+            const restartInstruction = this.add.text(GAME_CONSTANTS.WIDTH / 2, GAME_CONSTANTS.HEIGHT / 2 + 140,
+              'OR PRESS SPACEBAR', {
+                fontSize: '12px',
+                fill: '#ffff00',
+                fontFamily: 'Press Start 2P'
+              }).setOrigin(0.5);
+
+            // Function to handle restart
+            const restartGame = () => {
               // Reset game
               location.reload(); // Simple restart
-            });
+            };
+
+            restartButton.on('pointerdown', restartGame);
+
+            // Add spacebar support for restart button
+            const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            spaceKey.on('down', restartGame);
 
             // Play game over sound
             AudioSystem.playGameOverSound();
