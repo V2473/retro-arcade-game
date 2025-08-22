@@ -56,7 +56,8 @@ const gameState = {
   gameOver: false,
   audioContext: null,
   isAudioInitialized: false,
-  isAudioUnlocked: false
+  isAudioUnlocked: false,
+  escapePressed: false
 };
 
 /**
@@ -931,6 +932,75 @@ function create() {
   // Keyboard controls
   gameState.cursors = scene.input.keyboard.createCursorKeys();
 
+  // Add return to start screen function
+  scene.returnToStartScreen = function() {
+    console.log('=== RETURNING TO START SCREEN ===');
+
+    // Stop intro music if playing
+    AudioSystem.stopIntroMusic();
+
+    // Reset game state
+    gameState.score = 0;
+    gameState.health = GAME_CONSTANTS.MAX_HEALTH;
+    gameState.round = 1;
+    gameState.enemySpeed = GAME_CONSTANTS.ENEMY_SPEED;
+    gameState.introComplete = false;
+    gameState.gameOver = false;
+
+    // Hide all game elements
+    if (gameState.player) gameState.player.setVisible(false);
+    if (gameState.enemies) gameState.enemies.setVisible(false);
+    if (gameState.collectibles) gameState.collectibles.setVisible(false);
+    if (gameState.scoreText) gameState.scoreText.setVisible(false);
+    if (gameState.healthText) gameState.healthText.setVisible(false);
+    if (gameState.roundText) gameState.roundText.setVisible(false);
+
+    // Clear any game over elements
+    this.children.list.forEach(child => {
+      if (child.text && (child.text.includes('Game Over') || child.text.includes('AI GOT ALL GPUS') ||
+          child.text.includes('Restart') || child.text.includes('OR PRESS SPACEBAR'))) {
+        child.destroy();
+      }
+    });
+
+    // Reset enemy and collectible groups
+    if (gameState.enemies) {
+      gameState.enemies.clear(true, true);
+      // Recreate initial enemies
+      for (let i = 0; i < GAME_CONSTANTS.ENEMY_COUNT; i++) {
+        const x = Phaser.Math.Between(GAME_CONSTANTS.PLAYER_SIZE, GAME_CONSTANTS.WIDTH - GAME_CONSTANTS.PLAYER_SIZE);
+        const y = Phaser.Math.Between(GAME_CONSTANTS.PLAYER_SIZE, GAME_CONSTANTS.HEIGHT - GAME_CONSTANTS.PLAYER_SIZE);
+        const enemy = GameFactory.createEnemy(this, x, y, 'random');
+        if (enemy) {
+          gameState.enemies.add(enemy);
+          enemy.setVisible(false);
+        }
+      }
+    }
+
+    if (gameState.collectibles) {
+      gameState.collectibles.clear(true, true);
+      // Recreate initial collectibles
+      for (let i = 0; i < GAME_CONSTANTS.COLLECTIBLE_COUNT; i++) {
+        const x = Phaser.Math.Between(GAME_CONSTANTS.COLLECTIBLE_SIZE, GAME_CONSTANTS.WIDTH - GAME_CONSTANTS.COLLECTIBLE_SIZE);
+        const y = Phaser.Math.Between(GAME_CONSTANTS.COLLECTIBLE_SIZE, GAME_CONSTANTS.HEIGHT - GAME_CONSTANTS.COLLECTIBLE_SIZE);
+        const collectible = GameFactory.createCollectible(this, x, y);
+        if (collectible) {
+          gameState.collectibles.add(collectible);
+          collectible.setVisible(false);
+        }
+      }
+    }
+
+    // Update HUD text
+    if (gameState.scoreText) gameState.scoreText.setText(`Score: ${gameState.score}`);
+    if (gameState.healthText) gameState.healthText.setText(`Health: ${gameState.health}`);
+    if (gameState.roundText) gameState.roundText.setText(`Round: ${gameState.round}`);
+
+    // Show title screen
+    GameLogicSystem.showTitleScreen.call(this);
+  };
+
   // Create enemies group and populate
   gameState.enemies = scene.add.group();
   for (let i = 0; i < GAME_CONSTANTS.ENEMY_COUNT; i++) {
@@ -970,6 +1040,19 @@ function create() {
 }
 
 function update() {
+  // Handle escape key to return to start screen
+  const escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+  if (escapeKey.isDown && !gameState.escapePressed) {
+    gameState.escapePressed = true;
+    console.log('ESC pressed - returning to start screen');
+    AudioSystem.createBeep(400, 0.1, 'square', 0.3);
+    this.time.delayedCall(100, () => this.returnToStartScreen());
+    return;
+  }
+  if (!escapeKey.isDown) {
+    gameState.escapePressed = false;
+  }
+
   // Stop game if game over
   if (gameState.gameOver) {
     return;
@@ -999,9 +1082,21 @@ function update() {
       GAME_CONSTANTS.HEIGHT - GAME_CONSTANTS.PLAYER_SIZE);
   }
 
-  // Spacebar for action (placeholder)
+  // Spacebar for action - only allow during specific game states
+  // Block spacebar during active gameplay when no button is showing
   if (gameState.cursors && gameState.cursors.space && gameState.cursors.space.isDown) {
-    console.log('Action!');
+    // Only allow spacebar action if:
+    // 1. Intro is not complete (during title screen)
+    // 2. Game is over (during game over screen)
+    // Block during active gameplay when no specific action is available
+    if (!gameState.introComplete || gameState.gameOver) {
+      console.log('Spacebar action allowed - not during active gameplay');
+      // Spacebar action would go here if implemented
+    } else {
+      console.log('Spacebar blocked - no button showing during active gameplay');
+      // Block the spacebar during active gameplay
+      return;
+    }
   }
 
   // Enemy movement based on type
