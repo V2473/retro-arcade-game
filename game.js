@@ -521,63 +521,225 @@ const GameLogicSystem = {
     gameState.introElements = [];
 
     function nextStage() {
-      // Clear previous stage elements
+      // Clear previous stage elements with fade effect
       gameState.introElements.forEach(element => {
-        if (element && element.destroy) element.destroy();
+        if (element && element.destroy) {
+          // Add fade out animation before destroying
+          scene.tweens.add({
+            targets: element,
+            alpha: 0,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => element.destroy()
+          });
+        }
       });
       gameState.introElements = [];
-      // After loading, start the game
-      GameLogicSystem.startActualGame.call(scene);
+
+      // After loading, start the game with a brief pause
+      scene.time.delayedCall(500, () => {
+        GameLogicSystem.startActualGame.call(scene);
+      });
     }
+
+    // Add dramatic transition sound before loading screen
+    AudioSystem.createBeep(300, 0.2, 'sawtooth', 0.3);
+    scene.time.delayedCall(150, () => AudioSystem.createBeep(450, 0.15, 'sawtooth', 0.25));
+    scene.time.delayedCall(350, () => AudioSystem.createBeep(600, 0.1, 'square', 0.2));
 
     GameLogicSystem.createLoadingScreen.call(scene);
 
-    // Move to game after loading completes
-    scene.time.delayedCall(2500, () => {
-      AudioSystem.createBeep(800, 0.1, 'square', 0.2);
+    // Move to game after loading completes (extended time for enhanced sequence)
+    scene.time.delayedCall(3000, () => {
+      AudioSystem.createBeep(800, 0.1, 'square', 0.3);
+      scene.time.delayedCall(100, () => AudioSystem.createBeep(1000, 0.1, 'square', 0.3));
+      scene.time.delayedCall(200, () => AudioSystem.createBeep(1200, 0.2, 'sawtooth', 0.4));
       nextStage();
     });
   },
 
   createLoadingScreen() {
     const scene = this;
-    const loadingText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 200, 'LOADING...', {
-      fontSize: '24px',
-      fill: '#00ff00',
+
+    // Main loading message with 80s style
+    const loadingText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 150, 'SYSTEM BOOTING UP', {
+      fontSize: '28px',
+      fill: '#00ffff',
       fontFamily: 'Press Start 2P'
     }).setOrigin(0.5);
+    loadingText.setShadow(2, 2, '#000000', 4);
     gameState.introElements.push(loadingText);
 
-    // Progress bar (bigger)
-    const progressBg = scene.add.rectangle(GAME_CONSTANTS.WIDTH / 2, 280, 400, 30, 0x333333).setOrigin(0.5);
-    const progressBar = scene.add.rectangle(GAME_CONSTANTS.WIDTH / 2 - 200, 280, 0, 26, 0x00ff00).setOrigin(0, 0.5);
+    // Subtitle with dramatic reveal
+    const subtitleText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 190, 'PLEASE STAND BY', {
+      fontSize: '16px',
+      fill: '#ffff00',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5).setAlpha(0);
+    subtitleText.setShadow(1, 1, '#000000', 3);
+    gameState.introElements.push(subtitleText);
+
+    // Reveal subtitle with animation
+    scene.tweens.add({
+      targets: subtitleText,
+      alpha: { from: 0, to: 1 },
+      duration: 800,
+      ease: 'Power2',
+      delay: 300
+    });
+
+    // Status messages that change during loading
+    const statusMessages = [
+      'INITIALIZING AI SYSTEMS...',
+      'CALIBRATING NEURAL NETWORKS...',
+      'LOADING GRAPHIC ASSETS...',
+      'ESTABLISHING SECURE CONNECTION...',
+      'DEPLOYING DEFENSE PROTOCOLS...',
+      'SYSTEM READY FOR DEPLOYMENT'
+    ];
+
+    const statusText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 230, '', {
+      fontSize: '14px',
+      fill: '#ffffff',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5);
+    statusText.setShadow(1, 1, '#000000', 2);
+    gameState.introElements.push(statusText);
+
+    // Enhanced progress bar with 80s styling
+    const progressBg = scene.add.rectangle(GAME_CONSTANTS.WIDTH / 2, 280, 500, 40, 0x000000).setOrigin(0.5);
+    progressBg.setStrokeStyle(2, 0x00ffff);
+    const progressBar = scene.add.rectangle(GAME_CONSTANTS.WIDTH / 2 - 250, 280, 0, 36, 0x0080ff).setOrigin(0, 0.5);
     gameState.introElements.push(progressBg, progressBar);
 
-    // Animated loading bar
+    // Secondary progress bar for more 80s feel
+    const progressBar2 = scene.add.rectangle(GAME_CONSTANTS.WIDTH / 2 - 250, 280, 0, 32, 0x00ffff).setOrigin(0, 0.5).setAlpha(0.7);
+    gameState.introElements.push(progressBar2);
+
+    // Animated loading bars with different speeds
     scene.tweens.add({
       targets: progressBar,
-      width: 396,
-      duration: 2000,
+      width: 496,
+      duration: 2200,
       ease: 'Power2'
     });
 
-    // Loading dots animation
-    let dots = 0;
-    const loadingInterval = scene.time.addEvent({
-      delay: 500,
-      repeat: 5,
+    scene.tweens.add({
+      targets: progressBar2,
+      width: 496,
+      duration: 1800,
+      ease: 'Power1',
+      delay: 200
+    });
+
+    // 80s-style percentage counter
+    const percentText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 320, '0%', {
+      fontSize: '20px',
+      fill: '#ffff00',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5);
+    percentText.setShadow(1, 1, '#000000', 3);
+    gameState.introElements.push(percentText);
+
+    // Update percentage with progress
+    let currentPercent = 0;
+    const percentInterval = scene.time.addEvent({
+      delay: 50,
+      repeat: 100,
       callback: () => {
-        dots = (dots + 1) % 4;
-        loadingText.setText('LOADING' + '.'.repeat(dots));
-        AudioSystem.createBeep(400, 0.05, 'square', 0.1);
+        currentPercent++;
+        percentText.setText(currentPercent + '%');
+        // Flicker effect for extra 80s feel
+        if (Math.random() > 0.9) {
+          percentText.setFill('#ff0000');
+          setTimeout(() => percentText.setFill('#ffff00'), 50);
+        }
       }
     });
 
-    scene.time.delayedCall(2500, () => {
+    // Enhanced loading sequence with multiple phases
+    let messageIndex = 0;
+    let dotCount = 0;
+
+    const loadingInterval = scene.time.addEvent({
+      delay: 400,
+      repeat: 15,
+      callback: () => {
+        // Update main loading text with animation
+        dotCount = (dotCount + 1) % 4;
+        loadingText.setText('SYSTEM BOOTING UP' + '.'.repeat(dotCount));
+
+        // Color cycle the main text
+        const colors = ['#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080', '#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80'];
+        loadingText.setFill(colors[Math.floor(Date.now() / 200) % colors.length]);
+
+        // Play retro sound effects
+        AudioSystem.createBeep(200 + Math.random() * 200, 0.03, 'square', 0.1);
+
+        // Update status messages every few cycles
+        if (messageIndex < statusMessages.length && loadingInterval.repeatCount % 3 === 0) {
+          statusText.setText(statusMessages[messageIndex]);
+          messageIndex++;
+
+          // Special sound for status change
+          AudioSystem.createBeep(600, 0.08, 'sawtooth', 0.15);
+        }
+      }
+    });
+
+    // Add some 80s-style "data stream" effects
+    for (let i = 0; i < 8; i++) {
+      const dataLine = scene.add.text(
+        GAME_CONSTANTS.WIDTH / 2 + (Math.random() - 0.5) * 400,
+        350 + i * 15,
+        '01010101 01110010 01100101 01100001 01100100 01111001 00100001'.substring(0, Math.floor(Math.random() * 50) + 10),
+        {
+          fontSize: '10px',
+          fill: '#00ff00',
+          fontFamily: 'Press Start 2P'
+        }
+      ).setOrigin(0.5).setAlpha(0.6);
+      gameState.introElements.push(dataLine);
+
+      // Animate data lines
+      scene.tweens.add({
+        targets: dataLine,
+        alpha: { from: 0.3, to: 0.8 },
+        duration: 1000 + Math.random() * 1000,
+        repeat: -1,
+        yoyo: true,
+        delay: Math.random() * 2000
+      });
+    }
+
+    // Final dramatic sequence
+    scene.time.delayedCall(2200, () => {
       loadingInterval.destroy();
-      AudioSystem.createBeep(800, 0.1, 'square', 0.2);
-      // Call next stage if available
-      if (this.nextStage) this.nextStage();
+      percentInterval.destroy();
+
+      // Final system ready message
+      statusText.setText('SYSTEM READY - ENGAGE!');
+
+      // Dramatic sound sequence
+      const finalSounds = [800, 1000, 1200, 1500];
+      finalSounds.forEach((freq, index) => {
+        setTimeout(() => {
+          AudioSystem.createBeep(freq, 0.15, 'sawtooth', 0.3);
+        }, index * 150);
+      });
+
+      // Flash effect for final reveal
+      scene.tweens.add({
+        targets: [loadingText, statusText, percentText],
+        alpha: { from: 1, to: 0.3 },
+        duration: 100,
+        repeat: 3,
+        yoyo: true,
+        onComplete: () => {
+          // Call next stage if available
+          if (this.nextStage) this.nextStage();
+        }
+      });
     });
   },
 
