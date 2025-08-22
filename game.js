@@ -747,14 +747,44 @@ const GameLogicSystem = {
     const scene = this;
 
     // Title screen
-    const titleText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 100, 'RETRO ARCADE ADVENTURE', {
+    const titleText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 80, 'RETRO ARCADE ADVENTURE', {
       fontSize: '64px',
       fill: '#ffff00',
       fontFamily: 'Press Start 2P'
     }).setOrigin(0.5);
 
-    // Start button
-    const startButton = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 400, 'PRESS START', {
+    // AI warning message with 80s styling
+    const aiWarningText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 220, 'AI AGENTS BREAK LOOSE', {
+      fontSize: '24px',
+      fill: '#ff4444',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5);
+    aiWarningText.setShadow(2, 2, '#000000', 4);
+
+    // Subtitle with dramatic effect
+    const aiSubtitleText = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 260, 'GET ALL GPUS BEFORE ITS TOO LATE', {
+      fontSize: '16px',
+      fill: '#00ffff',
+      fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5).setAlpha(0);
+    aiSubtitleText.setShadow(1, 1, '#000000', 2);
+
+    // Animate subtitle reveal
+    scene.tweens.add({
+      targets: aiSubtitleText,
+      alpha: { from: 0, to: 1 },
+      duration: 1200,
+      ease: 'Power2',
+      delay: 800
+    });
+
+    // Add some warning beeps for the AI message
+    scene.time.delayedCall(400, () => AudioSystem.createBeep(400, 0.15, 'sawtooth', 0.3));
+    scene.time.delayedCall(600, () => AudioSystem.createBeep(350, 0.2, 'sawtooth', 0.25));
+    scene.time.delayedCall(900, () => AudioSystem.createBeep(300, 0.25, 'sawtooth', 0.4));
+
+    // Start button (moved down to accommodate new text)
+    const startButton = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 450, 'PRESS START', {
       fontSize: '18px',
       fill: '#00ffff',
       fontFamily: 'Press Start 2P'
@@ -770,8 +800,8 @@ const GameLogicSystem = {
       yoyo: true
     });
 
-    // Add instruction text for spacebar
-    const spaceInstruction = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 450, 'OR PRESS SPACEBAR', {
+    // Add instruction text for spacebar (moved down with start button)
+    const spaceInstruction = scene.add.text(GAME_CONSTANTS.WIDTH / 2, 500, 'OR PRESS SPACEBAR', {
       fontSize: '12px',
       fill: '#ffff00',
       fontFamily: 'Press Start 2P'
